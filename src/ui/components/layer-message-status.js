@@ -68,15 +68,19 @@
  * @class Layer.UI.components.MessageStatus
  * @extends Layer.UI.Component
  */
-import Constants from '../../constants';
-import { registerComponent } from './component';
+'use strict';
 
-registerComponent('layer-message-status', {
-  style: `
-    layer-message-status {
-      display: inline;
-    }
-  `,
+var _constants = require('../../constants');
+
+var _constants2 = _interopRequireDefault(_constants);
+
+var _component = require('./component');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+
+(0, _component.registerComponent)('layer-message-status', {
+  style: 'layer-message-status {\ndisplay: inline;\n}',
   properties: {
 
     /**
@@ -85,11 +89,11 @@ registerComponent('layer-message-status', {
      * @property {Layer.Core.Message} [message=null]
      */
     item: {
-      set(newMessage, oldMessage) {
+      set: function set(newMessage, oldMessage) {
         if (oldMessage) oldMessage.off(null, null, this);
         if (newMessage) newMessage.on('messages:change', this.onRerender, this);
         this.onRender();
-      },
+      }
     },
 
     /**
@@ -112,10 +116,9 @@ registerComponent('layer-message-status', {
      * @property {Function} [messageStatusRenderer=null]
      */
     messageStatusRenderer: {
-      get() {
-        return this.properties.messageStatusRenderer ||
-          this.parentComponent && this.parentComponent.messageStatusRenderer;
-      },
+      get: function get() {
+        return this.properties.messageStatusRenderer || this.parentComponent && this.parentComponent.messageStatusRenderer;
+      }
     },
 
     /**
@@ -124,7 +127,7 @@ registerComponent('layer-message-status', {
      * @property {String} [presendTemplate=]
      */
     presendTemplate: {
-      value: '',
+      value: ''
     },
 
     /**
@@ -133,7 +136,7 @@ registerComponent('layer-message-status', {
      * @property {String} [pendingTemplate=pending]
      */
     pendingTemplate: {
-      value: 'pending',
+      value: 'pending'
     },
 
     /**
@@ -142,7 +145,7 @@ registerComponent('layer-message-status', {
      * @property {String} [sentTemplate=sent]
      */
     sentTemplate: {
-      value: 'sent',
+      value: 'sent'
     },
 
     /**
@@ -152,7 +155,7 @@ registerComponent('layer-message-status', {
      * @property {String} [channelTemplate=sent]
      */
     channelTemplate: {
-      value: 'sent',
+      value: 'sent'
     },
 
     /**
@@ -161,7 +164,7 @@ registerComponent('layer-message-status', {
      * @property {String} [deliveredDMTemplate=delivered]
      */
     deliveredDMTemplate: {
-      value: 'delivered',
+      value: 'delivered'
     },
 
     /**
@@ -170,7 +173,7 @@ registerComponent('layer-message-status', {
      * @property {String} [readDMTemplate=read]
      */
     readDMTemplate: {
-      value: 'read',
+      value: 'read'
     },
 
     /**
@@ -181,7 +184,7 @@ registerComponent('layer-message-status', {
      * @property {String} [deliveredGroupTemplate=delivered to ${count} participants]
      */
     deliveredGroupTemplate: {
-      value: 'delivered to ${count} participants', // eslint-disable-line no-template-curly-in-string
+      value: 'delivered to ${count} participants' // eslint-disable-line no-template-curly-in-string
 
     },
 
@@ -193,9 +196,8 @@ registerComponent('layer-message-status', {
      * @property {String} [readGroupTemplate=read by ${count} participants]
      */
     readGroupTemplate: {
-      value: 'read by ${count} participants', // eslint-disable-line no-template-curly-in-string
-    },
-
+      value: 'read by ${count} participants' // eslint-disable-line no-template-curly-in-string
+    }
 
   },
   methods: {
@@ -206,8 +208,8 @@ registerComponent('layer-message-status', {
      * @method onCreate
      * @private
      */
-    onCreate() {
-    },
+    onCreate: function onCreate() {},
+
 
     /**
      * There are many ways to render the status of a Message.
@@ -218,61 +220,70 @@ registerComponent('layer-message-status', {
      * @private
      * @param {Event} evt
      */
-    onRerender(evt) {
-      if (this.item && !this.item.isDestroyed &&
-          (!evt || evt.hasProperty('recipientStatus') || evt.hasProperty('syncState'))) {
-        const message = this.item;
-        let html = '';
+    onRerender: function onRerender(evt) {
+      if (this.item && !this.item.isDestroyed && (!evt || evt.hasProperty('recipientStatus') || evt.hasProperty('syncState'))) {
+        var message = this.item;
+        var html = '';
+        console.log(message); // you'll notice last message sent is missing readStatus and deliveryStatus on refresh.
         if (this.messageStatusRenderer) {
           html = this.messageStatusRenderer(message);
         }
 
         // App called presend on the message and its not yet queued to be sent but is rendered:
         else if (message.isNew()) {
-          html = this.presendTemplate;
-        }
-
-        // Message is being sent, but not yet acknowledged by server
-        else if (message.isSaving()) {
-          html = this.pendingTemplate;
-        }
-
-        // Don't yet have a deliveryStatus / readStatus
-        else if (!message.deliveryStatus && !message.readStatus) {
-          html = '';
-        }
-
-        // Message has been acknowledged by the server, but has not been delivered to anyone
-        else if (message.deliveryStatus === Constants.RECIPIENT_STATE.NONE) {
-          html = this.sentTemplate;
-        }
-
-        // Message is a Channel Message where read/delivery is not tracked
-        else if (message.channel) {
-          html = this.channelTemplate;
-        }
-
-        // One-on-One Conversations
-        else if (message.getConversation().participants.length === 2) {
-          if (message.readStatus === Constants.RECIPIENT_STATE.NONE) {
-            html = this.deliveredDMTemplate;
-          } else {
-            html = this.readDMTemplate;
+            html = this.presendTemplate;
           }
-        }
 
-        // Group Conversations
-        else if (message.readStatus === Constants.RECIPIENT_STATE.NONE) {
-          const count = Object.keys(message.recipientStatus)
-            .filter(id =>
-              message.recipientStatus[id] === Constants.RECEIPT_STATE.DELIVERED ||
-              message.recipientStatus[id] === Constants.RECEIPT_STATE.READ).length - 1;
-          html = this.deliveredGroupTemplate.replace(/(\$\{.*?\})/g, match => count);
-        } else {
-          const count = Object.keys(message.recipientStatus)
-            .filter(id => message.recipientStatus[id] === Constants.RECEIPT_STATE.READ).length - 1;
-          html = this.readGroupTemplate.replace(/(\$\{.*?\})/g, match => count);
-        }
+          // Message is being sent, but not yet acknowledged by server
+          else if (message.isSaving()) {
+              html = this.pendingTemplate;
+            }
+
+            // Don't yet have a deliveryStatus / readStatus
+            else if (!message.deliveryStatus && !message.readStatus && !message.recipientStatus) {//sometimes recipientStatus will exist when delivery and read status do not
+                html = '';
+              }
+
+              // Message has been acknowledged by the server, but has not been delivered to anyone
+              else if (message.deliveryStatus === _constants2.default.RECIPIENT_STATE.NONE) {
+                  html = this.sentTemplate;
+                }
+
+                // Message is a Channel Message where read/delivery is not tracked
+                else if (message.channel) {
+                    html = this.channelTemplate;
+                  }
+
+                  // One-on-One Conversations, logic is flawed on refresh as is.
+
+                  // else if (message.getConversation().participants.length === 2) {
+                  //     //first two if statments work when sending a message, but not when refreshing
+                  //     if (message.readStatus === _constants2.default.RECIPIENT_STATE.NONE) {
+                  //       html = this.deliveredDMTemplate;
+                  //     } else if (message.deliveryStatus === _constants2.default.RECIPIENT_STATE.NONE){
+                  //       html = this.readDMTemplate;
+                  //     } else {
+                  //       html= 'deliveryStatus and readStatus are empty'; //last message sent will always end up here on refresh
+                  //     }
+                  //   }
+
+                    // Group Conversations
+                    else {
+                      let readNum = -1; // to make up for the fact the sender has read it.
+                      let deliveredNum = 0;
+                      let sentNum= 0;
+                      for (let status of Object.values(message.recipientStatus)) {
+                        if(status === _constants2.default.RECEIPT_STATE.DELIVERED){
+                          deliveredNum++;
+                        } else if(status === _constants2.default.RECEIPT_STATE.READ){
+                          readNum++;
+                        } else {
+                          sentNum++;
+                        }
+                      }
+                      // Wording isn't great, but its just a proof of concept
+                      html = `read by ${readNum}, only delivered to ${deliveredNum}, and only sent to ${sentNum}`;
+                    }
         this.innerHTML = html;
       }
     },
